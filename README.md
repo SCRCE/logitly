@@ -1,6 +1,10 @@
-# Logitly
+<p align="center">
+  <img src="assets/logitly-logo.svg" alt="Logitly" width="560">
+</p>
 
-Logitly turns compatible causal LLMs into fast, bounded decision engines.
+<p align="center">
+  Turn compatible causal LLMs into fast, bounded decision engines.
+</p>
 
 Give it a state, a question, and named choices. Logitly performs one prefill forward pass, reads the model's original next-token logits for fixed labels, and returns a probability distribution over only the choices you supplied.
 
