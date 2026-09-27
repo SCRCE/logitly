@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "logitly"
-version = "0.2.1"
+version = "0.2.2"
 description = "CUDA LLM decisions from restricted next-token logits across inference runtimes"
 readme = "README.pypi.md"
 requires-python = ">=3.11,<3.14"

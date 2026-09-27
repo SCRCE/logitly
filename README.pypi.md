@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/SCRCE/logitly/main/assets/logitly-logo.svg" alt="Logitly" width="560">
+  <img src="https://raw.githubusercontent.com/SCRCE/logitly/main/assets/logitly-logo-pypi.svg" alt="Logitly" width="560">
 </p>
 
 <p align="center">
