@@ -1,0 +1,25 @@
+.cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.gguf
+*.safetensors
+.venv/
+dist*/
+build/
+results/
+artifacts/
+browser-runs/
+brag-output*/
+data/manifests/*.json
+.env
+.venv-*/
+
+# Apple toolchain and bundled-at-build-time model artifacts
+apple/.tools/
+apple/.derived-data/
+apple/LogitlyDemo.xcodeproj/
+apple/LogitlyDemo/Resources/Models/*.gguf
+apple/.build/
+apple/Package.resolved

@@ -1,0 +1,19 @@
+{
+  "llama_cpp": {
+    "tag": "b11147",
+    "commit": "fee39dd92673ba0c08c8da96040ce53368b35188",
+    "xcframework_sha256": "d04512c7973241323faff78154340064d16be1330bba7dd97dbdffcd12890e06"
+  },
+  "model": {
+    "repository": "LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+    "revision": "8ed288026e23958ad9dfa92d53ed773a8eee7125",
+    "filename": "LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf",
+    "bytes": 695755488,
+    "sha256": "bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1",
+    "license": "LFM Open License v1.0"
+  },
+  "xcodegen": {
+    "version": "2.46.0",
+    "archive_sha256": "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+  }
+}

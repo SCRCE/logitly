@@ -1,0 +1,47 @@
+name: LogitlyDemo
+options:
+  minimumXcodeGenVersion: 2.46.0
+  deploymentTarget:
+    iOS: "18.0"
+packages:
+  Logitly:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    PRODUCT_BUNDLE_IDENTIFIER: com.scrce.logitly.demo
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+targets:
+  LogitlyDemo:
+    type: application
+    platform: iOS
+    sources:
+      - path: LogitlyDemo
+    dependencies:
+      - package: Logitly
+        product: Logitly
+    settings:
+      base:
+        PRODUCT_NAME: Logitly
+        INFOPLIST_KEY_CFBundleDisplayName: Logitly
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+    scheme:
+      testTargets:
+        - LogitlyDemoTests
+  LogitlyDemoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: LogitlyDemoTests
+    dependencies:
+      - target: LogitlyDemo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.scrce.logitly.demo.tests

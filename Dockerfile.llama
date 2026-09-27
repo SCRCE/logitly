@@ -1,0 +1,11 @@
+FROM nvidia/cuda:12.8.1-devel-ubuntu24.04
+ENV DEBIAN_FRONTEND=noninteractive CMAKE_ARGS=-DGGML_CUDA=ON PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install --yes --no-install-recommends python3.12 python3.12-venv cmake build-essential && rm -rf /var/lib/apt/lists/*
+RUN python3.12 -m venv /opt/decision
+ENV PATH=/opt/decision/bin:$PATH HF_HOME=/workspace/.cache/huggingface LOGITLY_PROJECT_ROOT=/workspace
+WORKDIR /workspace
+COPY pyproject.toml README.md README.pypi.md ./
+COPY src ./src
+RUN python -m pip install --no-cache-dir '.[llama-cpp,benchmark]'
+ENTRYPOINT ["python", "-m", "logitly"]
+CMD ["--help"]

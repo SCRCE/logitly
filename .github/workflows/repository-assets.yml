@@ -1,0 +1,13 @@
+name: Repository asset guard
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  reject-model-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject tracked weights and oversized files
+        run: ./apple/scripts/check-no-large-files.sh

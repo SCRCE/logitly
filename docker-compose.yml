@@ -1,0 +1,16 @@
+services:
+  logitly:
+    build:
+      context: .
+    image: logitly:0.2.0
+    gpus: all
+    init: true
+    stop_grace_period: 2s
+    ports:
+      - "8000:8000"
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    env_file:
+      - path: .env
+        required: false

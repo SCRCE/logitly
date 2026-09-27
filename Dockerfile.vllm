@@ -1,0 +1,8 @@
+FROM vllm/vllm-openai:v0.26.0
+WORKDIR /workspace
+ENV PYTHONUNBUFFERED=1 HF_HOME=/workspace/.cache/huggingface LOGITLY_PROJECT_ROOT=/workspace
+COPY pyproject.toml README.md README.pypi.md ./
+COPY src ./src
+RUN python3 -m pip install --no-cache-dir '.[vllm,benchmark]'
+ENTRYPOINT ["python3", "-m", "logitly"]
+CMD ["--help"]

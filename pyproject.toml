@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "logitly"
+version = "0.2.0"
+description = "CUDA LLM decisions from restricted next-token logits across inference runtimes"
+readme = "README.pypi.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = []
+
+[project.optional-dependencies]
+transformers = [
+  "accelerate==1.14.0",
+  "huggingface-hub==1.20.1",
+  "safetensors==0.6.2",
+  "torch==2.10.0",
+  "transformers==5.12.1",
+]
+quantized = ["compressed-tensors==0.18.0"]
+llama-cpp = ["llama-cpp-python==0.3.16"]
+vllm = ["vllm==0.26.0", "transformers==5.12.1"]
+browser = ["browser-harness==0.1.13"]
+benchmark = ["datasets==4.4.2", "matplotlib==3.10.8", "numpy==2.3.5", "huggingface-hub==1.20.1", "psutil==7.2.2"]
+test = ["pytest==9.0.2", "pytest-cov==7.0.0"]
+
+[project.scripts]
+logitly = "logitly.cli:main"
+
+[project.entry-points."vllm.general_plugins"]
+logitly = "logitly.runtimes.vllm:register_vllm_models"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/logitly"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/docs", "/examples", "/scripts", "/apple", "/.github", "/pyproject.toml", "/README.md", "/README.pypi.md", "/LICENSE", "/requirements*.lock", "/Dockerfile*", "/docker-compose.yml"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+  "network: requires access to Hugging Face",
+  "gpu: requires an NVIDIA GPU and downloaded model weights",
+]
