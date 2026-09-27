@@ -1,18 +1,28 @@
-# Logitly
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SCRCE/logitly/main/assets/logitly-logo.svg" alt="Logitly" width="560">
+</p>
 
-Logitly turns a compatible LLM into a decision model. Give it a state, a question, and named choices; it returns a probability distribution using one forward pass and the model's existing LM-head logits. The model weights stay unchanged, and no answer tokens are generated.
+<p align="center">
+  Turn compatible causal LLMs into fast, bounded decision engines.
+</p>
 
-## Install
+<p align="center">
+  <a href="https://github.com/SCRCE/logitly/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SCRCE/logitly/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://pypi.org/project/logitly/"><img alt="PyPI" src="https://img.shields.io/pypi/v/logitly.svg"></a>
+  <a href="https://pypi.org/project/logitly/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/logitly.svg"></a>
+  <img alt="Typed" src="https://img.shields.io/badge/typing-typed-006F66">
+  <a href="https://github.com/SCRCE/logitly/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-B72B5B.svg"></a>
+</p>
 
-Python 3.11–3.13 and an NVIDIA CUDA GPU are required for inference.
+Logitly turns state, a question, and named choices into a probability
+distribution. It performs one prefill forward pass, reads the model's original
+next-token logits for fixed labels, and normalizes only the supplied choices.
 
 ```bash
-python -m pip install "logitly[transformers]"
+pip install "logitly[transformers]"
 ```
 
-For supported quantized checkpoints, also install `logitly[quantized]`. The `vllm` and `llama-cpp` extras are available for their respective GPU runtimes; use separate environments when their dependency versions differ.
-
-## Example
+## Quick Start
 
 ```python
 from logitly import DecisionModel
@@ -20,7 +30,7 @@ from logitly import DecisionModel
 with DecisionModel.from_pretrained("lfm") as model:
     result = model.choice(
         state={"amount": 9700, "device": "unknown"},
-        question="What action should we take?",
+        question="What action should be taken?",
         choices={
             "close": "Close as benign",
             "review": "Request analyst review",
@@ -29,11 +39,88 @@ with DecisionModel.from_pretrained("lfm") as model:
     )
 
 print(result.choice)
+print(result.confidence)
 print(result.probabilities)
 ```
 
-The `lfm`, `glm`, and `qwen` aliases select pinned checkpoints. Compatible Hugging Face model IDs and local checkpoints are also accepted. `model.noul(state, question)` returns yes/no probabilities; `model.score(state, question, levels)` returns an ordered distribution and expected score; `model.decide_many(requests, batch_size=...)` processes batches.
+No answer tokens are generated. Logitly does not fine-tune the model, replace
+its LM head, or run a completion loop.
 
-Logitly selects single-token label logits after the assistant answer boundary and normalizes only those logits. It does not use `generate()`, change model weights, or add a new prediction head. Returned confidence is the maximum choice probability and is not a calibrated correctness guarantee.
+## Decision Primitives
 
-The CLI provides `logitly validate`, `logitly playground`, and `logitly benchmark`.
+```python
+model.noul(state, question)                  # yes/no probabilities
+model.choice(state, question, choices)       # named choice distribution
+model.score(state, question, levels)         # ordinal distribution + mean
+```
+
+`model.decide_many(requests, batch_size=...)` evaluates mixed decisions in a
+batch while preserving the same result schemas.
+
+## How It Works
+
+```text
+state + question + choices
+            ↓
+      frozen causal LLM
+            ↓
+   original LM-head logits
+            ↓
+ select A/B/C/… label logits
+            ↓
+          softmax
+            ↓
+ named probability distribution
+```
+
+Logitly gathers the final-position vocabulary logit for each valid label and
+computes a softmax over only that restricted set. Every model profile verifies
+that its labels are distinct, single-token continuations at the exact native
+assistant-answer boundary before inference begins.
+
+## Models and Runtimes
+
+| Alias | Pinned checkpoint | Notes |
+|---|---|---|
+| `lfm` | `LiquidAI/LFM2.5-1.2B-Instruct` | Recommended starting point |
+| `qwen` | `RedHatAI/Qwen3.8-27B-INT4` | INT4; thinking disabled |
+| `glm` | `mratsim/GLM-4-32B-0414.w4a16-gptq` | W4A16 GPTQ |
+
+Compatible Hugging Face model IDs and local checkpoints are also accepted.
+The Python package provides Transformers, vLLM, and llama.cpp runtimes behind
+the same API.
+
+```bash
+pip install "logitly[transformers,quantized]"
+pip install "logitly[vllm]"
+pip install "logitly[llama-cpp]"
+pip install "logitly[browser]"
+```
+
+Transformers and vLLM should use separate environments because their pinned
+runtime dependencies differ. Python inference currently requires an NVIDIA
+CUDA GPU.
+
+## CLI
+
+```bash
+logitly validate lfm
+logitly playground lfm --port 8000
+logitly benchmark lfm --size 128 --output results/lfm
+```
+
+## Documentation
+
+- [Source and full guide](https://github.com/SCRCE/logitly)
+- [Library and runtime guide](https://github.com/SCRCE/logitly/blob/main/docs/LIBRARY.md)
+- [Apple runtime guide](https://github.com/SCRCE/logitly/blob/main/apple/README.md)
+
+## Scope
+
+`confidence` is the maximum probability in the restricted distribution, not
+an automatic correctness guarantee. Validate outcomes and calibration on data
+representative of your application.
+
+## License
+
+Logitly is available under the [MIT License](https://github.com/SCRCE/logitly/blob/main/LICENSE).

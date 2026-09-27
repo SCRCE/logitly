@@ -1,49 +1,28 @@
 <p align="center">
-  <img src="assets/logitly-logo.svg" alt="Logitly" width="560">
+  <img src="https://raw.githubusercontent.com/SCRCE/logitly/main/assets/logitly-logo.svg" alt="Logitly" width="560">
 </p>
 
 <p align="center">
   Turn compatible causal LLMs into fast, bounded decision engines.
 </p>
 
-Give it a state, a question, and named choices. Logitly performs one prefill forward pass, reads the model's original next-token logits for fixed labels, and returns a probability distribution over only the choices you supplied.
+<p align="center">
+  <a href="https://github.com/SCRCE/logitly/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SCRCE/logitly/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://pypi.org/project/logitly/"><img alt="PyPI" src="https://img.shields.io/pypi/v/logitly.svg"></a>
+  <a href="https://pypi.org/project/logitly/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/logitly.svg"></a>
+  <img alt="Typed" src="https://img.shields.io/badge/typing-typed-006F66">
+  <a href="https://github.com/SCRCE/logitly/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-B72B5B.svg"></a>
+</p>
 
-```text
-state + question + choices
-            ↓
-      frozen causal LLM
-            ↓
-   original LM-head logits
-            ↓
- select A/B/C/… label logits
-            ↓
-          softmax
-            ↓
- named probability distribution
-```
-
-No generated answer tokens. No fine-tuning. No replacement model head.
-
-## Install
-
-Logitly supports Python 3.11–3.13 and currently requires an NVIDIA CUDA GPU for Python inference.
+Logitly turns state, a question, and named choices into a probability
+distribution. It performs one prefill forward pass, reads the model's original
+next-token logits for fixed labels, and normalizes only the supplied choices.
 
 ```bash
-python -m pip install "logitly[transformers]"
+pip install "logitly[transformers]"
 ```
 
-Optional runtimes and features are installed separately:
-
-```bash
-python -m pip install "logitly[transformers,quantized]"
-python -m pip install "logitly[vllm]"
-python -m pip install "logitly[llama-cpp]"
-python -m pip install "logitly[browser]"
-```
-
-Use separate environments for Transformers and vLLM because their pinned runtime dependencies differ.
-
-## Quick start
+## Quick Start
 
 ```python
 from logitly import DecisionModel
@@ -64,15 +43,20 @@ print(result.confidence)
 print(result.probabilities)
 ```
 
-Logitly provides three decision primitives:
+No answer tokens are generated. Logitly does not fine-tune the model, replace
+its LM head, or run a completion loop.
+
+## Decision Primitives
+
+Logitly exposes three bounded decision operations:
 
 ```python
-model.noul(state, question)
-model.choice(state, question, choices)
-model.score(state, question, levels)
+model.noul(state, question)                  # yes/no probabilities
+model.choice(state, question, choices)       # named choice distribution
+model.score(state, question, levels)         # ordinal distribution + mean
 ```
 
-It can also evaluate mixed requests in a batch:
+Mixed decisions can be evaluated together:
 
 ```python
 from logitly import ChoiceRequest, NoulRequest
@@ -93,36 +77,61 @@ results = model.decide_many([
 ])
 ```
 
-## How it works
-
-For choice labels \(\ell_1, \ldots, \ell_k\), Logitly reads the final-position vocabulary logit for each label token:
+## How It Works
 
 ```text
-zᵢ = model(prompt)[last_position, token(labelᵢ)]
-pᵢ = softmax([z₁, …, zₖ])ᵢ
+state + question + choices
+            ↓
+      frozen causal LLM
+            ↓
+   original LM-head logits
+            ↓
+ select A/B/C/… label logits
+            ↓
+          softmax
+            ↓
+ named probability distribution
 ```
 
-The softmax is calculated over the selected labels, not the entire vocabulary. Semantic IDs such as `review` or `block` are mapped back onto the resulting probabilities.
+For labels `A` through `T`, Logitly gathers the final-position vocabulary
+logit for each valid label and computes a softmax over that restricted set.
+Semantic IDs such as `review` and `block` are mapped back onto the resulting
+probabilities.
 
-Each model profile defines its native chat boundary and verbalizers. Logitly verifies that every label is a distinct, single-token continuation at the exact assistant-answer boundary before inference begins.
+Every model profile defines its native chat boundary and verbalizers. Logitly
+verifies that each label is a distinct, single-token continuation at the exact
+assistant-answer boundary before inference begins.
 
-## Model profiles
+## Models and Runtimes
 
-| Alias | Checkpoint | Runtime notes |
+| Alias | Pinned checkpoint | Notes |
 |---|---|---|
-| `lfm` | `LiquidAI/LFM2.5-1.2B-Instruct` | Pinned BF16 checkpoint; recommended starting point |
-| `qwen` | `RedHatAI/Qwen3.8-27B-INT4` | Pinned INT4 checkpoint; thinking disabled |
-| `glm` | `mratsim/GLM-4-32B-0414.w4a16-gptq` | Pinned W4A16 GPTQ checkpoint |
+| `lfm` | `LiquidAI/LFM2.5-1.2B-Instruct` | Recommended starting point |
+| `qwen` | `RedHatAI/Qwen3.8-27B-INT4` | INT4; thinking disabled |
+| `glm` | `mratsim/GLM-4-32B-0414.w4a16-gptq` | W4A16 GPTQ |
 
-Compatible Hugging Face model IDs, local checkpoints, and GGUF files can also be supplied directly. Unsupported architectures fail with a compatibility error instead of changing inference modes.
+Compatible Hugging Face model IDs, local checkpoints, and GGUF files can also
+be supplied directly. Unsupported architectures fail explicitly instead of
+silently switching inference modes.
 
-## Runtimes
+Available runtimes:
 
-- **Transformers** reads only the final-position logits through supported causal-LM interfaces.
-- **vLLM** uses custom pooling adapters that retain the model's original LM head without invoking its generation sampler.
-- **llama.cpp** evaluates GGUF prompts and reads selected logits without constructing a completion.
+- **Transformers** — direct final-position logits from causal-LM interfaces.
+- **vLLM** — custom pooling adapters using the model's original LM head.
+- **llama.cpp** — selected GGUF logits without a completion sampler.
 
-All three runtimes implement the same `DecisionModel` contract.
+Install only the runtime you need:
+
+```bash
+pip install "logitly[transformers,quantized]"
+pip install "logitly[vllm]"
+pip install "logitly[llama-cpp]"
+pip install "logitly[browser]"
+```
+
+Transformers and vLLM should use separate environments because their pinned
+runtime dependencies differ. Python inference currently requires an NVIDIA
+CUDA GPU.
 
 ## CLI
 
@@ -132,66 +141,62 @@ logitly playground lfm --port 8000
 logitly benchmark lfm --size 128 --output results/lfm
 ```
 
-The playground provides an interactive local interface for Choice, Noul, and Score. The benchmark records predictions, accuracy, calibration, permutation stability, latency, throughput, and GPU-memory measurements.
-
-## Docker
-
-```bash
-cp .env.example .env
-docker compose build
-docker compose run --rm logitly validate lfm
-docker compose run --rm --service-ports logitly playground lfm --host 0.0.0.0
-```
-
-Model and runtime caches remain under the ignored project-local `.cache/` directory.
+The playground exposes Choice, Noul, and Score interactively. The benchmark
+records accuracy, calibration, permutation stability, latency, throughput,
+and GPU-memory measurements.
 
 ## Demos
-
-The package includes two bounded decision demonstrations:
 
 ```bash
 python -m logitly.demos.snake --model lfm --steps 20 --show-board
 python -m logitly.demos.browser --help
 ```
 
-The browser policy turns visible DOM controls into a finite set of operations and targets. The model cannot invent selectors, coordinates, JavaScript, or unsupported actions. Browser support uses the same `browser-harness` transport as the public `browser-use/jev-ultrafast` project.
+The browser demo converts visible DOM controls into finite operation and
+target sets. The model cannot invent selectors, coordinates, JavaScript, or
+unsupported actions.
 
-## Apple implementation
+## Apple Runtime
 
-The [`apple/`](apple/) directory contains a Swift package and iPhone demo built around llama.cpp and Metal. It exposes the same Choice, Noul, Score, and batch interface with a bundled LiquidAI GGUF model and no sampler or completion loop.
+The [`apple/`](apple/) directory contains a Swift package and iPhone demo using
+llama.cpp and Metal. It implements the same Choice, Noul, Score, and batch
+contract without a sampler or completion loop.
 
 ```bash
 ./apple/scripts/bootstrap.sh
 open apple/LogitlyDemo.xcodeproj
 ```
 
-The Apple target requires macOS and Xcode for compilation and physical-device validation.
+The Apple target requires macOS and Xcode for compilation and physical-device
+validation.
+
+## Documentation
+
+- [Library and runtime guide](docs/LIBRARY.md)
+- [Logitly and Jev](docs/LOGITLY_AND_JEV.md)
+- [Apple runtime guide](apple/README.md)
 
 ## Development
 
 ```bash
+git clone https://github.com/SCRCE/logitly.git
+cd logitly
 python -m pip install -e ".[test,benchmark]"
 python -m pytest -m "not network and not gpu"
 python -m build
 ```
 
-GPU conformance tests accept an existing local checkpoint:
-
-```bash
-LOGITLY_TEST_MODEL=/absolute/path/to/model \
-python -m pytest -m gpu
-```
-
-## Documentation
-
-- [Library and runtime guide](docs/LIBRARY.md)
-- [Logitly and Jev: an open-source path to machine-native decisions](docs/LOGITLY_AND_JEV.md)
-- [Apple runtime guide](apple/README.md)
+GPU conformance tests accept an existing local checkpoint through
+`LOGITLY_TEST_MODEL`.
 
 ## Scope
 
-`confidence` is the maximum probability in the restricted distribution. It is not automatically a calibrated correctness guarantee. Applications should validate outcomes, measure calibration on representative data, and place deterministic checks around consequential actions.
+`confidence` is the maximum probability in the restricted distribution, not
+an automatic correctness guarantee. Validate outcomes and calibration on data
+representative of your application, and place deterministic checks around
+consequential actions.
 
 ## License
 
-Logitly is released under the [MIT License](LICENSE). Model checkpoints remain subject to their respective licenses.
+Logitly is available under the [MIT License](LICENSE). Model checkpoints remain
+subject to their respective licenses.

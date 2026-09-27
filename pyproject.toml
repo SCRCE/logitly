@@ -4,13 +4,25 @@ build-backend = "hatchling.build"
 
 [project]
 name = "logitly"
-version = "0.2.0"
+version = "0.2.1"
 description = "CUDA LLM decisions from restricted next-token logits across inference runtimes"
 readme = "README.pypi.md"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = []
+classifiers = [
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/SCRCE/logitly"
+Repository = "https://github.com/SCRCE/logitly"
+Documentation = "https://github.com/SCRCE/logitly/tree/main/docs"
+Issues = "https://github.com/SCRCE/logitly/issues"
 
 [project.optional-dependencies]
 transformers = [
